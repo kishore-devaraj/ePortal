@@ -1,5 +1,8 @@
 package com.eportal.handler;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
@@ -17,12 +20,19 @@ import com.eportal.utils.GenericResponse;
 
 @Path("/")
 public class Employeehandler {
+	private static final Logger LOGGER = Logger.getLogger(Employeehandler.class.getName());
+	
+	
+	{
+		LOGGER.setLevel(Level.INFO);
+	}
 	
 	@POST
 	@Path("/employee")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public GenericResponse createEmployee(Employee employee){
+		
 		GenericResponse response = new GenericResponse();
 		try{
 			// Checking the mandatory field to create a employee
@@ -32,6 +42,7 @@ public class Employeehandler {
 				employee.getPassword() != null &&
 				employee.getConfirmPassword() != null)
 			{	
+				LOGGER.info("Create Employee request is valid");
 				CreateResource createResource = new CreateResource();
 				response = createResource.Employee(employee,response);
 			} else {
