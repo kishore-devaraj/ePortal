@@ -81,7 +81,9 @@ public class UpdateResource {
 			
 			// Updating skillsets
 			if (employee.getSkillsets() != null){
-				entity.setIndexedProperty("skillsets",employee.getSkillsets());
+				entity.setIndexedProperty("skillsets",employee.getSkillsets()
+						
+						);
 			}
 			
 			// Updating the Address
@@ -107,7 +109,7 @@ public class UpdateResource {
 			
 			try{
 				datastore.put(entity);
-				LOGGER.info("Entity successfully updated");
+				LOGGER.info("Entity successfully updated to datastore");
 				
 				// Updating the memecache
 				Memcache.deleteEmployee(employee.getEmployeeId());

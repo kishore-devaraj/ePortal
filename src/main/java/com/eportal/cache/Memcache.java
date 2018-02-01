@@ -1,9 +1,5 @@
 package com.eportal.cache;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,50 +16,27 @@ public class Memcache {
 	}
 	
 	public static Entity getEmployee(String employeeId){
-		byte[] stream;
-		ObjectInputStream in;
-		ByteArrayInputStream byteIn;
 		Entity entity = null;
-		
-		LOGGER.info("Fetching employee details from memcache");
-		Object obj = syncCache.get(employeeId);
-		stream = (byte[]) obj;
-		
-		if (stream != null){
-			try{
-				byteIn = new ByteArrayInputStream(stream);
-				in = new ObjectInputStream(byteIn);
-				obj = in.readObject();
-				entity = (Entity) obj;
-			}catch(Exception e){
-				System.out.println(e);
-				System.out.println("Error occured while reading from memcache");
+		try{
+			entity = (Entity) syncCache.get(employeeId);
+			if (entity != null){
+				LOGGER.info("Entity being retrieved from memcache");
+			}else{
+				LOGGER.info("No entity found in the memcache");
 			}
+		}catch(Exception e){
+			LOGGER.info("No entity found in the memcache");
 		}
-		
 		return entity;
 	}
 	
 	public static void putEmployee(Entity entity){
 		
 		try{
-			ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-			ObjectOutputStream out;
-			byte[] stream;
-			try{
-				out = new ObjectOutputStream(byteOut);
-				out.writeObject(entity);
-				out.flush();
-			}catch(Exception ee){
-				System.out.println(ee);
-			}
-			stream = byteOut.toByteArray();
-			
-			syncCache.put(entity.getProperty("employeeId"),stream);
-			LOGGER.info("Employee details are stored in memcache");
+			syncCache.put(entity.getProperty("employeeId"),entity);
+			LOGGER.info("Entity successfully added to memcache");
 		}catch(Exception e){
-			System.out.println(e);
-			System.err.println("Error while updating Memcache");
+			LOGGER.warning("Exception while adding entity to the memcache");
 		}
 	}
 	
@@ -71,7 +44,7 @@ public class Memcache {
 	public static void deleteEmployee(String employeeId){
 		try{
 			Object obj = syncCache.get(employeeId);
-			LOGGER.info("Obj from memcache " + obj);
+			// LOGGER.info("Obj from memcache " + obj);
 			if (obj != null){
 				syncCache.delete(employeeId);
 				LOGGER.info("Employee details deleted from memcache");
