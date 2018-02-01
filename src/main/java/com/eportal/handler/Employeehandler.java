@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -15,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import com.eportal.models.Employee;
 import com.eportal.service.CreateResource;
 import com.eportal.service.DeleteResource;
+import com.eportal.service.GetEmployeeService;
 import com.eportal.service.UpdateResource;
 import com.eportal.utils.GenericResponse;
 
@@ -95,6 +97,48 @@ public class Employeehandler {
 		}else{
 			response.setCode(400);
 			response.setData("error","EmployeeId and Organisation is must");
+		}
+		return response;
+	}
+	
+	@GET
+	@Path("/{orgid}/employee")
+	@Produces(MediaType.APPLICATION_JSON)
+	public GenericResponse getAllEmployees(@PathParam("orgid") String orgid){
+		GenericResponse response = new GenericResponse();
+		try{
+			if (orgid != null){
+				GetEmployeeService employee = new GetEmployeeService();
+				response = employee.getAllEmployees(orgid, response);
+			}else{
+				response.setCode(400);
+				response.setData("error","Organisation Id is missing");
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			System.out.println(e);
+			response.setCode(400);
+			response.setData("error","Error while processing the request");
+		}
+		return response;
+	}
+	
+	@GET
+	@Path("/{org}/employee/{id}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public GenericResponse getEmployeeById(
+			@PathParam("org") String org,
+			@PathParam("id") String id){
+		GenericResponse response = new GenericResponse();
+		
+		try{
+			GetEmployeeService employee = new GetEmployeeService();
+			response = employee.getEmployeeById(org, id, response);
+		}catch(Exception e){
+			System.out.println(e);
+			e.printStackTrace();
+			response.setCode(400);
+			response.setData("error","Error happened while retriving the Employee");
 		}
 		return response;
 	}

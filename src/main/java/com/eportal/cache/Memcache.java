@@ -4,23 +4,29 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import com.eportal.models.SignInModel;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
 public class Memcache {
 	public static MemcacheService syncCache = MemcacheServiceFactory.getMemcacheService();
+	public static Logger LOGGER = Logger.getLogger(Memcache.class.getName());
 	
-	public static Entity getEmployee(SignInModel signInModel){
+	static {
+		LOGGER.setLevel(Level.INFO);
+	}
+	
+	public static Entity getEmployee(String employeeId){
 		byte[] stream;
 		ObjectInputStream in;
 		ByteArrayInputStream byteIn;
 		Entity entity = null;
 		
-		System.out.println("Employee get from memcache");
-		Object obj = syncCache.get(signInModel.getEmployeeId());
+		LOGGER.info("Fetching employee details from memcache");
+		Object obj = syncCache.get(employeeId);
 		stream = (byte[]) obj;
 		
 		if (stream != null){
@@ -54,7 +60,7 @@ public class Memcache {
 			stream = byteOut.toByteArray();
 			
 			syncCache.put(entity.getProperty("employeeId"),stream);
-			System.out.println("Employee put in memcache");
+			LOGGER.info("Employee details are stored in memcache");
 		}catch(Exception e){
 			System.out.println(e);
 			System.err.println("Error while updating Memcache");

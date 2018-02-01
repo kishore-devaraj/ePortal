@@ -51,11 +51,12 @@ public class CreateResource {
 					entity.setIndexedProperty("employeeName", employee.getEmployeeName());
 					entity.setIndexedProperty("organisation",employee.getOrganisation());
 					
-					if (employee.getSkillsets() != null){
+					if (employee.getSkillsets().isEmpty()){
+						// Don't do anything
+					}else{
 						System.out.println(employee.getSkillsets());
 						entity.setIndexedProperty("skillsets",employee.getSkillsets());
 					}
-					
 					
 					// Storing password in encrypted form (SHA-256)
 					try{

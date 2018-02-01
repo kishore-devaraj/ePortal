@@ -37,7 +37,7 @@ public class EmployeeSigninService {
 		
 		
 		// Check the memcache
-		Entity memcacheEntity = Memcache.getEmployee(signInModel);
+		Entity memcacheEntity = Memcache.getEmployee(signInModel.getEmployeeId());
 		if (memcacheEntity != null){
 			System.out.println("Entity received from memcache");
 			entity = memcacheEntity;
