@@ -11,6 +11,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import com.eportal.models.Employee;
@@ -142,4 +143,25 @@ public class Employeehandler {
 		}
 		return response;
 	}
+	
+	
+	@GET
+	@Path("/{org}/employees/")
+	@Produces(MediaType.APPLICATION_JSON)
+	public GenericResponse getEmployeeBySkillsets(
+			@PathParam("org") String org,
+			@QueryParam("skillsets") String querySkillsets
+			){
+			GenericResponse response = new GenericResponse();
+			String skillsets[] = querySkillsets.split(",");
+			
+			if (!(querySkillsets.isEmpty())){
+				GetEmployeeService employee = new GetEmployeeService();
+				response = employee.bySkillsets(org,skillsets,response);
+			}else{
+				response.setCode(400);
+				response.setData("error","No query param found");
+			}
+			return response;
+			}
 }

@@ -1,5 +1,9 @@
 package com.eportal.service;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import com.eportal.cache.Memcache;
 import com.eportal.db.Datastore;
 import com.eportal.utils.GenericResponse;
 import com.google.appengine.api.NamespaceManager;
@@ -12,6 +16,11 @@ import com.google.appengine.api.datastore.KeyFactory;
 public class DeleteResource {
 	
 public DatastoreService datastore;
+	private static Logger LOGGER = Logger.getLogger(DeleteResource.class.getName());
+	
+	static{
+		LOGGER.setLevel(Level.INFO);
+	}
 
 	public DeleteResource(){
 		if (this.datastore == null){
@@ -29,20 +38,23 @@ public DatastoreService datastore;
 			Entity entity = datastore.get(key);
 			// System.out.println(entity);
 			datastore.delete(key);
+			LOGGER.info("Employee Details deleted from datastore");
 			
+			// Deleting from memcache
+			Memcache.deleteEmployee(id);
 			
 			// Deleting the entry in address table too
 			key = (Key) entity.getProperty("Address");
 			if (key != null){
 				datastore.delete(key);
 			}else{
-				System.out.println("No data found in address table");
+				LOGGER.info("No data found in address table");
 			}
 			
-			System.out.println("Employee Deleted");
 			response.setCode(200);
 			response.setData("message", "Employee Deleted");
 		}catch(EntityNotFoundException e){
+			LOGGER.warning("Invalid employeeId given for deleting");
 			response.setCode(400);
 			response.setData("error", "No such Employee exists");
 		}catch(Exception e){

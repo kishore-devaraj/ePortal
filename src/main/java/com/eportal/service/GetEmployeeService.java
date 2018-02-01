@@ -1,6 +1,7 @@
 package com.eportal.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +20,9 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.Filter;
+import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
 
 public class GetEmployeeService {
 	public DatastoreService datastore;
@@ -127,6 +131,51 @@ public class GetEmployeeService {
 				response.setData("error", "Error happened while retrieving employee details");
 			}
 		}
+		return response;
+	}
+	
+	
+	
+	
+	public GenericResponse bySkillsets(String org, String[] skillsets, GenericResponse response){
+		String kind = "Employee";
+		List<EmployeeResponse> listOfEmployees = new ArrayList<EmployeeResponse>();
+		
+		// Set the namespace
+		NamespaceManager.set(org);
+	
+		// Converting array to collection
+		List<String> skillsetsCollection = new ArrayList<String>(Arrays.asList(skillsets));
+	
+		
+		try{
+			// Adding property filter
+			Filter propertyFilter = new FilterPredicate("skillsets",FilterOperator.IN,skillsetsCollection);
+			
+			// Creating the query
+			Query q = new Query(kind).setFilter(propertyFilter);
+			
+			// Prepared the query
+			List<Entity> results = this.datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+			if (results.isEmpty()){
+				response.setCode(200);
+				response.setData("message","No Employee found for the given query");
+				return response;
+			}
+			for (Entity entity: results){
+				EmployeeResponse employeeResponse = new EmployeeResponse();
+				employeeResponse = EmployeeDetailsBuilder.build(entity);
+				listOfEmployees.add(employeeResponse);
+			}
+			response.setCode(200);
+			response.group("QueryResults", listOfEmployees);
+		}catch(Exception e){
+			System.out.println(e);
+			e.printStackTrace();
+			response.setCode(400);
+			response.setData("error", "Error happened while retrieving Employee by their skillsets");
+		}
+		
 		return response;
 	}
 	

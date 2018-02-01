@@ -1,9 +1,12 @@
 package com.eportal.service;
 
 import java.security.MessageDigest;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.bind.DatatypeConverter;
 
+import com.eportal.cache.Memcache;
 import com.eportal.db.Datastore;
 import com.eportal.models.Employee;
 import com.eportal.utils.GenericResponse;
@@ -17,8 +20,13 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 public class UpdateResource {
-	public DatastoreService datastore;
+	private DatastoreService datastore;
 	private String salt = "mysalt";
+	private static Logger LOGGER = Logger.getLogger(UpdateResource.class.getName());
+	
+	static{
+		LOGGER.setLevel(Level.INFO);
+	}
 	
 	public UpdateResource(){
 		if (this.datastore == null){
@@ -50,7 +58,7 @@ public class UpdateResource {
 							
 						}catch(Exception ee){
 							System.out.println(ee);
-							System.out.println("Some error while creating password hash");
+							LOGGER.warning("Some error while creating password hash");
 							response.setCode(400);
 							response.setData("error", "This user cannot be created. Something wrong with the password");
 						}
@@ -90,7 +98,7 @@ public class UpdateResource {
 					datastore.put(addressEntity);
 				}catch(Exception e){
 					System.out.println(e);
-					System.err.println("Error while updating the Address table");
+					LOGGER.warning("Error while updating the Address table");
 				}
 			}
 			
@@ -99,7 +107,12 @@ public class UpdateResource {
 			
 			try{
 				datastore.put(entity);
-				System.out.println("Entity successfully updated");
+				LOGGER.info("Entity successfully updated");
+				
+				// Updating the memecache
+				Memcache.deleteEmployee(employee.getEmployeeId());
+				Memcache.putEmployee(entity);
+				
 				response.setCode(200);
 				response.setData("message", "Successfully updated employee details");
 			}catch(Exception e){

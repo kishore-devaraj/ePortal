@@ -67,4 +67,18 @@ public class Memcache {
 		}
 	}
 	
+	
+	public static void deleteEmployee(String employeeId){
+		try{
+			Object obj = syncCache.get(employeeId);
+			LOGGER.info("Obj from memcache " + obj);
+			if (obj != null){
+				syncCache.delete(employeeId);
+				LOGGER.info("Employee details deleted from memcache");
+			}
+		}catch(Exception e){
+			LOGGER.info("No Employee was found for deleting");
+		}
+	}
+	
 }
