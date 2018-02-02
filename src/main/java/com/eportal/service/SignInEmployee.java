@@ -6,7 +6,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.eportal.handler.EmployeeSigninService;
+import com.eportal.handler.EmployeeSigninHandler;
 import com.eportal.models.SignInModel;
 import com.eportal.utils.GenericResponse;
 
@@ -19,13 +19,11 @@ public class SignInEmployee {
 	public GenericResponse signin(SignInModel signInModel){
 		GenericResponse response = new GenericResponse();
 		try{
-			EmployeeSigninService signInService = new EmployeeSigninService();
+			EmployeeSigninHandler signInService = new EmployeeSigninHandler();
 			response = signInService.auth(signInModel, response);
-			
 		}catch(Exception e){
 			response.setCode(400);
 			response.setData("error","Error happened while sign in");
-			System.out.println(e);
 		}
 		return response;
 	}

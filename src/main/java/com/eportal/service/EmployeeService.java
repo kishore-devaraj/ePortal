@@ -14,16 +14,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import com.eportal.handler.CreateResource;
-import com.eportal.handler.DeleteResource;
-import com.eportal.handler.GetEmployeeService;
-import com.eportal.handler.UpdateResource;
+import com.eportal.handler.EmployeeHandler;
 import com.eportal.models.Employee;
 import com.eportal.utils.GenericResponse;
 
 @Path("/")
-public class Employeehandler {
-	private static final Logger LOGGER = Logger.getLogger(Employeehandler.class.getName());
+public class EmployeeService {
+	private static final Logger LOGGER = Logger.getLogger(EmployeeService.class.getName());
 	
 	
 	{
@@ -45,9 +42,8 @@ public class Employeehandler {
 				employee.getPassword() != null &&
 				employee.getConfirmPassword() != null)
 			{	
-				LOGGER.info("Create Employee request is valid");
-				CreateResource createResource = new CreateResource();
-				response = createResource.Employee(employee,response);
+				EmployeeHandler employeeHandler = new EmployeeHandler();
+				response = employeeHandler.create(employee, response);
 			} else {
 				response.setCode(400);
 				response.setData("error","Please fill up all the required details");
@@ -72,8 +68,9 @@ public class Employeehandler {
 			){
 		GenericResponse response = new GenericResponse();
 		if (id != null){
-			DeleteResource delete = new DeleteResource();
-			response = delete.Employee(org,id,response);
+			EmployeeHandler employeeHandler = new EmployeeHandler();
+			response = employeeHandler.delete(org,id,response);
+			
 		}else{
 			response.setCode(400);
 			response.setData("error", "Specify in the Employee Id in the path param");
@@ -89,12 +86,11 @@ public class Employeehandler {
 	@Produces(MediaType.APPLICATION_JSON)
 	public GenericResponse updateEmployee(Employee employee){
 		GenericResponse response = new GenericResponse();
-		UpdateResource update = new UpdateResource();
 		
 		if ((employee.getOrganisation() !=  null) && 
 			(employee.getEmployeeId() != null)){
-			response = update.Employee(employee, response);
-	
+			EmployeeHandler employeeHandler = new EmployeeHandler();
+			response = employeeHandler.update(employee,response);
 		}else{
 			response.setCode(400);
 			response.setData("error","EmployeeId and Organisation is must");
@@ -109,8 +105,8 @@ public class Employeehandler {
 		GenericResponse response = new GenericResponse();
 		try{
 			if (orgid != null){
-				GetEmployeeService employee = new GetEmployeeService();
-				response = employee.getAllEmployees(orgid, response);
+				EmployeeHandler employeeHandler = new EmployeeHandler();
+				response = employeeHandler.getAll(orgid,response);
 			}else{
 				response.setCode(400);
 				response.setData("error","Organisation Id is missing");
@@ -133,8 +129,8 @@ public class Employeehandler {
 		GenericResponse response = new GenericResponse();
 		
 		try{
-			GetEmployeeService employee = new GetEmployeeService();
-			response = employee.getEmployeeById(org, id, response);
+			EmployeeHandler employeeHandler = new EmployeeHandler();
+			response = employeeHandler.getById(org,id,response);
 		}catch(Exception e){
 			System.out.println(e);
 			e.printStackTrace();
@@ -154,13 +150,17 @@ public class Employeehandler {
 			){
 			GenericResponse response = new GenericResponse();
 			String skillsets[] = querySkillsets.split(",");
-			
-			if (!(querySkillsets.isEmpty())){
-				GetEmployeeService employee = new GetEmployeeService();
-				response = employee.bySkillsets(org,skillsets,response);
-			}else{
-				response.setCode(400);
-				response.setData("error","No query param found");
+			try{
+				if (!(querySkillsets.isEmpty())){
+					EmployeeHandler employeeHandler = new EmployeeHandler();
+					response = employeeHandler.getBySkill(org,skillsets,response);
+					
+				}else{
+					response.setCode(400);
+					response.setData("error","No query param found");
+				}
+			}catch(Exception e){
+				e.printStackTrace();
 			}
 			return response;
 			}

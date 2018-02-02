@@ -1,5 +1,6 @@
 package com.eportal.db;
 
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -8,8 +9,11 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
@@ -38,7 +42,7 @@ public class DatastoreWrapper {
 	 * return: boolean
 	 */
 	
-	public boolean put(String id,Entity entity){
+	public void put(String id,Entity entity) throws Exception{
 		
 		// Begin the transaction
 		trx = this.datastore.beginTransaction();
@@ -55,10 +59,9 @@ public class DatastoreWrapper {
 			if(this.trx.isActive()){
 				this.trx.rollback();
 				logger.warning("Value not updated in the datastore & Memcache");
-				return false;
+				throw new Exception();
 			}
 		}
-		return true;
 	}
 	
 	
@@ -68,27 +71,16 @@ public class DatastoreWrapper {
 	 * returns: Entity, null
 	 */
 	
-	public Entity get(String kind,String id){
-		try{
+	public Entity get(String kind,String id) throws EntityNotFoundException{
 			Entity entity = (Entity) cache.get(id);
 			if (entity != null){
 				return entity;
 			}
 			
 			Key key = KeyFactory.createKey(kind, id);
-			try{
-				Entity dEntity = this.datastore.get(key);
-				cache.put(id, dEntity);
-				return dEntity;
-			}catch(EntityNotFoundException e){
-				logger.info("No entity found for the given key");
-				return null;
-			}
-			
-		}catch(Exception e){
-			logger.warning("Exception occured while retreiving value from the datastore");
-			return null;
-		}		
+			Entity dEntity = this.datastore.get(key);
+			cache.put(id, dEntity);
+			return dEntity;		
 	}
 	
 	
@@ -98,7 +90,7 @@ public class DatastoreWrapper {
 	 * returns: boolean
 	 */
 	
-	public boolean delete(String kind,String id){
+	public void delete(String kind,String id) throws Exception{
 		this.trx = this.datastore.beginTransaction();
 		
 		try{
@@ -106,21 +98,30 @@ public class DatastoreWrapper {
 			if (obj != null){
 				this.cache.delete(id);
 			}
-			
 			Key key = KeyFactory.createKey(kind, id);
 			this.datastore.delete(key);
 			trx.commit();
-			
 		}catch(Exception e){
 			logger.warning("Exception occurred while deleting");
 			logger.info("Exception name: " + e);
+			throw new Exception();
 		}finally{
 			if(this.trx.isActive()){
 				this.trx.rollback();
-				return false;
 			}
 		}
-		return true;
+	}
+	
+	public List<Entity> getAll(String kind) throws Exception{
+		Query query = new Query(kind);
+		List<Entity> entities = this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+		return entities;
+	}
+	
+	public List<Entity> getByFitler(Filter filter,String kind) throws Exception {
+		Query query = new Query(kind).setFilter(filter);
+		List <Entity> entities = this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+		return entities;
 	}
 }
 
