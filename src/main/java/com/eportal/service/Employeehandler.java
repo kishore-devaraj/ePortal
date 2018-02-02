@@ -1,4 +1,4 @@
-package com.eportal.handler;
+package com.eportal.service;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,11 +14,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.eportal.handler.CreateResource;
+import com.eportal.handler.DeleteResource;
+import com.eportal.handler.GetEmployeeService;
+import com.eportal.handler.UpdateResource;
 import com.eportal.models.Employee;
-import com.eportal.service.CreateResource;
-import com.eportal.service.DeleteResource;
-import com.eportal.service.GetEmployeeService;
-import com.eportal.service.UpdateResource;
 import com.eportal.utils.GenericResponse;
 
 @Path("/")

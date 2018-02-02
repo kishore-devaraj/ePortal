@@ -1,4 +1,4 @@
-package com.eportal.service;
+package com.eportal.handler;
 
 import java.security.MessageDigest;
 import java.util.logging.Level;
