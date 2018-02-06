@@ -1,12 +1,17 @@
 package com.eportal.models;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.eportal.db.DatastoreWrapper;
 import com.eportal.utils.Sha256Hex;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Query.Filter;
+import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
 
 public class Employee {
 	private String employeeName;
@@ -15,11 +20,14 @@ public class Employee {
 	private String password;
 	private String confirmPassword;
 	private String employeeId;
-	private String employeeKind = "Employee";
-	private String addressKind = "Address";
-	private ArrayList<Object> skillsets = new ArrayList<Object>();
-		
 	
+	private final String employeeKind = "Employee";
+	private final String addressKind = "Address";
+	private final String skillsetsKind = "Skillsets";
+	private Map<String,Object> skillset = new HashMap<String,Object>();
+	private ArrayList<Object> skillsets = new ArrayList<Object>();
+	
+
 	/* Getters and Setters */
 	public String getEmployeeName() {
 		return employeeName;
@@ -77,7 +85,16 @@ public class Employee {
 		this.employeeId = employeeId;
 	}
 	
+	public Map<String, Object> getSkillset() {
+		return skillset;
+	}
+
+	public void setSkillset(Map<String, Object> skillset) {
+		this.skillset = skillset;
+	}
+	
 	public Entity toEntity() throws Exception{
+		DatastoreWrapper datastore = new DatastoreWrapper(this.getOrganisation());
 		Entity entity = new Entity(employeeKind,this.getEmployeeId());
 		
 		// First set the indexed property
@@ -86,7 +103,17 @@ public class Employee {
 		entity.setIndexedProperty("organisation",this.getOrganisation());
 		
 		if (!(this.getSkillsets().isEmpty())){
-			entity.setIndexedProperty("skillsets",this.getSkillsets());
+			//entity.setIndexedProperty("skillsets",this.getSkillsets());
+			// List<Entity> entities = new ArrayList<Entity>();
+			
+			for(Object skillset: this.getSkillsets()){
+				this.setSkillset((Map<String,Object>) skillset);
+				Entity skillsetEntity = new Entity(this.skillsetsKind, this.getEmployeeId() + "_" + this.getSkillset().get("name"));
+				skillsetEntity.setIndexedProperty("employeeId",this.getEmployeeId());
+				skillsetEntity.setIndexedProperty("skillset", this.getSkillset().get("name"));
+				skillsetEntity.setIndexedProperty("experience",this.getSkillset().get("experience"));
+				datastore.put(this.getEmployeeId() + "_" + this.getSkillset().get("name"), skillsetEntity);
+			}
 		}
 		
 		if (this.getAddress() != null){
@@ -94,8 +121,8 @@ public class Employee {
 			addressEntity.setIndexedProperty("address", this.getAddress());
 			entity.setUnindexedProperty("Address",addressEntity.getKey());
 			
+			
 			// Specific to this scenarios
-			DatastoreWrapper datastore = new DatastoreWrapper(this.getOrganisation());
 			datastore.put(this.getEmployeeId(), addressEntity);			
 		}
 		// UnindexedProperty
@@ -103,19 +130,39 @@ public class Employee {
 		
 		return entity;
 	}
-	
+
 	public Employee fromEntity(Entity entity) throws EntityNotFoundException {
+
 		this.setEmployeeId((String) entity.getProperty("employeeId"));
 		this.setEmployeeName((String) entity.getProperty("employeeName"));
 		this.setOrganisation((String) entity.getProperty("organisation"));
 		// this.setPassword((String) entity.getProperty("password"));
+		this.setSkillset(null);
 		
-		if(entity.hasProperty("skillsets")){
-			this.setSkillsets( (ArrayList<Object>) entity.getProperty("skillsets"));
+		DatastoreWrapper datastore = new DatastoreWrapper(this.getOrganisation());
+
+		// Query his skillsets
+		Filter filter = new FilterPredicate("employeeId",FilterOperator.EQUAL, this.getEmployeeId());
+		List<Entity> skillsetsEntities;
+		try {
+			skillsetsEntities = datastore.getByFitler(filter,skillsetsKind);
+
+			ArrayList<Object> skillsetsList = new ArrayList<Object>();
+			if (!(skillsetsEntities.isEmpty())){
+				for(Entity ent: skillsetsEntities){
+					Map<String,Object> tempMap = new HashMap<String,Object>();
+					tempMap.put("name",ent.getProperty("skillset"));
+					tempMap.put("experience", ent.getProperty("experience"));
+					skillsetsList.add(tempMap);
+				}
+				this.setSkillsets(skillsetsList);
+			}
+		} catch (Exception e1) {
+			e1.printStackTrace();
 		}
 		
+		
 		if(entity.hasProperty("Address")){
-			DatastoreWrapper datastore = new DatastoreWrapper(this.getOrganisation());
 			Entity addressEntity;
 			try{
 				addressEntity = datastore.get("Address",(String) entity.getProperty("address"));

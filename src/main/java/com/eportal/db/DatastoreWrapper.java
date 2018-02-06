@@ -12,6 +12,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.PropertyProjection;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Transaction;
@@ -33,6 +34,7 @@ public class DatastoreWrapper {
 		datastore = DatastoreServiceFactory.getDatastoreService();
 		cache = MemcacheServiceFactory.getMemcacheService();
 		NamespaceManager.set(namespace);
+		logger.info("Namespace is " + NamespaceManager.get());
 	}
 	
 	
@@ -46,7 +48,7 @@ public class DatastoreWrapper {
 		
 		// Begin the transaction
 		trx = this.datastore.beginTransaction();
-		
+		logger.info("Namespace is " + NamespaceManager.get());
 		try{
 			this.datastore.put(entity);
 			this.cache.put(id,entity);
@@ -123,7 +125,13 @@ public class DatastoreWrapper {
 		List <Entity> entities = this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
 		return entities;
 	}
-}
+	
+	public List<Entity> getbyProjection(PropertyProjection projection, String Kind){
+		Query query = new Query(Kind).addProjection(projection);
+		List<Entity> entities = this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+		return entities;
+	}
+}	
 
 
 /*

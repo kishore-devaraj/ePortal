@@ -1,5 +1,6 @@
 package com.eportal.service;
 
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.eportal.handler.EmployeeHandler;
 import com.eportal.models.Employee;
+import com.eportal.models.Skillsets;
 import com.eportal.utils.GenericResponse;
 
 @Path("/")
@@ -42,8 +44,21 @@ public class EmployeeService {
 				employee.getPassword() != null &&
 				employee.getConfirmPassword() != null)
 			{	
+				if(!(employee.getSkillsets().isEmpty())){
+					try{
+						for(Object skillset : employee.getSkillsets()){
+							employee.setSkillset((Map<String,Object>) skillset);
+						}
+					}catch(Exception e){
+						response.setCode(400);
+						response.setData("error","Please check whether skillsets field contains a list of dictionary contains skillsets and experience");
+						return response;
+					}
+				}
+					
 				EmployeeHandler employeeHandler = new EmployeeHandler();
 				response = employeeHandler.create(employee, response);
+				
 			} else {
 				response.setCode(400);
 				response.setData("error","Please fill up all the required details");
@@ -89,6 +104,19 @@ public class EmployeeService {
 		
 		if ((employee.getOrganisation() !=  null) && 
 			(employee.getEmployeeId() != null)){
+			
+			if(!(employee.getSkillsets().isEmpty())){
+				try{
+					for(Object skillset : employee.getSkillsets()){
+						employee.setSkillset((Map<String,Object>) skillset);
+					}
+				}catch(Exception e){
+					response.setCode(400);
+					response.setData("error","Please check whether skillsets field contains a list of dictionary contains skillsets and experience");
+					return response;
+				}
+			}
+			
 			EmployeeHandler employeeHandler = new EmployeeHandler();
 			response = employeeHandler.update(employee,response);
 		}else{
@@ -97,6 +125,57 @@ public class EmployeeService {
 		}
 		return response;
 	}
+	
+	
+	
+	
+	@PUT
+	@Path("/employee/skillsets")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public GenericResponse updateSkillsets(Skillsets skillsets){
+		GenericResponse response = new GenericResponse();
+		try{
+			if((skillsets.getEmployeeId() != null) &&
+					(skillsets.getEmployeeName() != null) && 
+					(skillsets.getOrganisation() != null) && 
+					(skillsets.getSkillsets() != null)
+					){
+			
+				if(skillsets.getSkillsets().isEmpty()){
+					response.setCode(400);
+					response.setData("error", "Skillsets List is empty");
+				}else{
+					try{
+						for(Object skillset : skillsets.getSkillsets()){
+							skillsets.setSkillset((Map<String,Object>) skillset);
+						}
+						EmployeeHandler employeeHandler = new EmployeeHandler();
+						response = employeeHandler.updateSkillsetsAndExperience(skillsets, response);
+						
+					}catch(Exception e){
+						e.printStackTrace();
+						response.setCode(400);
+						response.setData("error","Please check whether skillsets field contains a list of dictionary contains skillsets and experience");
+						return response;
+					}
+					
+				}
+				
+			}else{
+				response.setCode(400);
+				response.setData("error","Please give all the neccessary details");
+			}
+			
+		}catch(Exception e){
+			e.printStackTrace();
+			response.setCode(400);
+			response.setData("error","Exception occured while updating employee skillsets");
+		}
+		
+		return response;
+	}
+	
 	
 	@GET
 	@Path("/{orgid}/employee")
@@ -141,27 +220,56 @@ public class EmployeeService {
 	}
 	
 	
+//	@GET
+//	@Path("/{org}/employees/")
+//	@Produces(MediaType.APPLICATION_JSON)
+//	public GenericResponse getEmployeeBySkillsets(
+//			@PathParam("org") String org,
+//			@QueryParam("skillsets") String querySkillsets
+//			){
+//			GenericResponse response = new GenericResponse();
+//			String skillsets[] = querySkillsets.split(",");
+//			try{
+//				if (!(querySkillsets.isEmpty())){
+//					EmployeeHandler employeeHandler = new EmployeeHandler();
+//					response = employeeHandler.getBySkill(org,skillsets,response);
+//					
+//				}else{
+//					response.setCode(400);
+//					response.setData("error","No query param found");
+//				}
+//			}catch(Exception e){
+//				e.printStackTrace();
+//			}
+//			return response;
+//			}
+//	
 	@GET
-	@Path("/{org}/employees/")
+	@Path("{org}/employees")
 	@Produces(MediaType.APPLICATION_JSON)
-	public GenericResponse getEmployeeBySkillsets(
-			@PathParam("org") String org,
-			@QueryParam("skillsets") String querySkillsets
+	public GenericResponse getEmployeeBySkillsetsAndExperience(
+			@PathParam("org") String organisation,
+			@QueryParam("skillsets") String querySkillsets,
+			@QueryParam("experience") int experience
 			){
-			GenericResponse response = new GenericResponse();
-			String skillsets[] = querySkillsets.split(",");
-			try{
-				if (!(querySkillsets.isEmpty())){
-					EmployeeHandler employeeHandler = new EmployeeHandler();
-					response = employeeHandler.getBySkill(org,skillsets,response);
-					
-				}else{
-					response.setCode(400);
-					response.setData("error","No query param found");
-				}
-			}catch(Exception e){
-				e.printStackTrace();
+		GenericResponse response = new GenericResponse();
+		EmployeeHandler employeeHandler = new EmployeeHandler();
+		
+		String skillsets[] = querySkillsets.split(",");
+		
+		try{
+			if ((skillsets != null) && (experience == 0)){
+				response = employeeHandler.getBySkill(organisation,skillsets,response);
+			}else if ((skillsets != null) && (experience != 0)){
+				response = employeeHandler.getEmployeeBySkillsetsAndExperience(organisation,skillsets,experience,response);
 			}
-			return response;
-			}
+		}catch(Exception e){
+			e.printStackTrace();
+			response.setCode(400);
+			response.setData("error", "Exception occured while retrieving employees");
+		}
+		
+		return response;
+	}
+	
 }

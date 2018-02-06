@@ -16,9 +16,43 @@
       <param-name>jersey.config.server.provider.packages</param-name>
       <param-value>com.eportal</param-value>
     </init-param>
+    <init-param>
+    	<param-name>companyName</param-name>
+    	<param-value>Test Organisation</param-value>
+    </init-param>
   </servlet>
   <servlet-mapping>
     <servlet-name>Employee Data Portal</servlet-name>
     <url-pattern>/v1/*</url-pattern>
   </servlet-mapping>
+ 
+	<context-param>
+	    <description>Context Parameter Test</description>
+	    <param-name>companyName</param-name>
+	    <param-value>Test Organization, Incorporated</param-value>
+	</context-param>
+
+  <!--  Declaring Filters --> 
+ <!--
+  <filter>
+  	<filter-name>logging</filter-name>
+  	<filter-class>com.eportal.filters.LoggingFilter</filter-class>
+  </filter>
+  
+  <filter-mapping>
+  	<filter-name>logging</filter-name>
+  	<servlet-name>/*</servlet-name>
+  </filter-mapping>
+  
+   
+  <filter>
+  	<filter-name>timer</filter-name>
+  	<filter-class>com.eportal.filters.TimerFilter</filter-class>
+  </filter>
+  
+  <filter-mapping>
+  	<filter-name>timer</filter-name>
+  	<url-pattern>/*</url-pattern>
+  </filter-mapping>
+  -->
 </web-app>

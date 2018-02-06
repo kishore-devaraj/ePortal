@@ -5,8 +5,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.servlet.ServletContext;
+import javax.ws.rs.core.Context;
+
 import com.eportal.db.DatastoreWrapper;
 import com.eportal.models.Employee;
+import com.eportal.models.Skillsets;
 import com.eportal.utils.GenericResponse;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
@@ -19,6 +23,9 @@ public class EmployeeHandler {
 	private final static String addressKind = "Address";
 	private final static String employeeKind = "Employee";
 	private final static Logger logger = Logger.getLogger(EmployeeHandler.class.getName());
+	
+	@Context
+	ServletContext context;
 	
 	public GenericResponse create(Employee employee, GenericResponse response){
 		datastore = new DatastoreWrapper(employee.getOrganisation());
@@ -137,7 +144,9 @@ public class EmployeeHandler {
 	public GenericResponse getById(String org, String id, GenericResponse response){
 		datastore = new DatastoreWrapper(org);
 		Employee employee = new Employee();
+		
 		try{
+			System.out.println("Hey i caught you here");
 			Entity entity = datastore.get(employeeKind, id);
 			employee = employee.fromEntity(entity);
 			response.setCode(200);
@@ -177,6 +186,40 @@ public class EmployeeHandler {
 			logger.info("Exception name " + e);
 			response.setCode(400);
 			response.setData("error","Exception occured while getting employees by skillsets");
+		}
+		return response;
+	}
+	
+	public GenericResponse getEmployeeBySkillsetsAndExperience(String organisation, String[] skillsets, int experience,GenericResponse response)
+	{
+		if(skillsets.length == 1){
+			String skillset = skillsets[0];
+		}else{
+			logger.warning("Multiple values given at skillsets");
+			response.setCode(400);
+			response.setData("error", "Mutliple value at skillset is not allowed");
+			return response;
+		}
+		
+		
+		return response;
+	}
+	
+	public GenericResponse updateSkillsetsAndExperience(Skillsets skillsets, GenericResponse response){
+		datastore = new DatastoreWrapper(skillsets.getOrganisation());
+		List<Entity> entities = skillsets.toEntity();
+		
+		for (Entity entity: entities){
+			try {
+				
+				datastore.put(skillsets.getEmployeeId(), entity);
+				response.setCode(200);
+				response.setData("message","Entities successfully updated");
+			} catch (Exception e) {
+				e.printStackTrace();
+				response.setCode(500);
+				response.setData("error","Exception occured. Please try again after sometime");
+			}
 		}
 		return response;
 	}
