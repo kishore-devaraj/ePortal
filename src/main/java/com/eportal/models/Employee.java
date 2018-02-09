@@ -1,9 +1,9 @@
 package com.eportal.models;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.eportal.db.DatastoreWrapper;
 import com.eportal.utils.Sha256Hex;
@@ -16,18 +16,23 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 public class Employee {
 	private String employeeName;
 	private String organisation;
-	private String address;
 	private String password;
 	private String confirmPassword;
 	private String employeeId;
 	
+	private List<Skillsets> skillsets;
+	private Address address;
+	
 	private final String employeeKind = "Employee";
 	private final String addressKind = "Address";
-	private final String skillsetsKind = "Skillsets";
-	private Map<String,Object> skillset = new HashMap<String,Object>();
-	private ArrayList<Object> skillsets = new ArrayList<Object>();
+	private final String skillsetsKind = "Skillsets";	
+	private final static Logger logger = Logger.getLogger(Employee.class.getName()); 
 	
-
+	{
+		logger.setLevel(Level.INFO);
+	}
+	
+	
 	/* Getters and Setters */
 	public String getEmployeeName() {
 		return employeeName;
@@ -45,11 +50,11 @@ public class Employee {
 		this.organisation = organisation;
 	}
 
-	public String getAddress() {
+	public Address getAddress() {
 		return address;
 	}
 
-	public void setAddress(String address) {
+	public void setAddress(Address address) {
 		this.address = address;
 	}
 
@@ -69,11 +74,11 @@ public class Employee {
 		this.confirmPassword = confirmPassword;
 	}
 
-	public ArrayList<Object> getSkillsets() {
+	public List<Skillsets> getSkillsets() {
 		return skillsets;
-	}	
+	}
 
-	public void setSkillsets(ArrayList<Object> skillsets) {
+	public void setSkillsets(List<Skillsets> skillsets) {
 		this.skillsets = skillsets;
 	}
 
@@ -85,14 +90,6 @@ public class Employee {
 		this.employeeId = employeeId;
 	}
 	
-	public Map<String, Object> getSkillset() {
-		return skillset;
-	}
-
-	public void setSkillset(Map<String, Object> skillset) {
-		this.skillset = skillset;
-	}
-	
 	public Entity toEntity() throws Exception{
 		DatastoreWrapper datastore = new DatastoreWrapper(this.getOrganisation());
 		Entity entity = new Entity(employeeKind,this.getEmployeeId());
@@ -102,29 +99,34 @@ public class Employee {
 		entity.setIndexedProperty("employeeName", this.getEmployeeName());
 		entity.setIndexedProperty("organisation",this.getOrganisation());
 		
-		if (!(this.getSkillsets().isEmpty())){
-			//entity.setIndexedProperty("skillsets",this.getSkillsets());
-			// List<Entity> entities = new ArrayList<Entity>();
-			
-			for(Object skillset: this.getSkillsets()){
-				this.setSkillset((Map<String,Object>) skillset);
-				Entity skillsetEntity = new Entity(this.skillsetsKind, this.getEmployeeId() + "_" + this.getSkillset().get("name"));
-				skillsetEntity.setIndexedProperty("employeeId",this.getEmployeeId());
-				skillsetEntity.setIndexedProperty("skillset", this.getSkillset().get("name"));
-				skillsetEntity.setIndexedProperty("experience",this.getSkillset().get("experience"));
-				datastore.put(this.getEmployeeId() + "_" + this.getSkillset().get("name"), skillsetEntity);
+		try{
+			if (!(this.getSkillsets().isEmpty())){
+				for(Skillsets skillset: this.getSkillsets()){
+					skillset = skillset.mapEmployeetoSkillset(this, skillset);
+					Entity skillsetEntity = skillset.toEntity();
+					String id = this.getEmployeeId() + "_" + skillsetEntity.getProperty("skillset");
+					datastore.put(id,skillsetEntity);
+				}
+			}
+		}catch(NullPointerException e){
+			// Pass
+		}
+		
+		// Setting Address
+		
+		if (this.getAddress() != null){
+			try{
+				 Entity addrEntity = this.getAddress().toEntity();
+				 String id  = this.getAddress().getEmployeeId() + "_addr";
+				 datastore.put(id,addrEntity);
+				 
+			}catch(Exception e){
+				e.printStackTrace();
+				logger.warning("Exception occured while updating address Entity from Employee");
+				logger.info("Exception name " + e);
 			}
 		}
 		
-		if (this.getAddress() != null){
-			Entity addressEntity = new Entity(addressKind,this.getEmployeeId());
-			addressEntity.setIndexedProperty("address", this.getAddress());
-			entity.setUnindexedProperty("Address",addressEntity.getKey());
-			
-			
-			// Specific to this scenarios
-			datastore.put(this.getEmployeeId(), addressEntity);			
-		}
 		// UnindexedProperty
 		entity.setUnindexedProperty("password", Sha256Hex.hashPassword(password));
 		
@@ -136,40 +138,42 @@ public class Employee {
 		this.setEmployeeId((String) entity.getProperty("employeeId"));
 		this.setEmployeeName((String) entity.getProperty("employeeName"));
 		this.setOrganisation((String) entity.getProperty("organisation"));
-		// this.setPassword((String) entity.getProperty("password"));
-		this.setSkillset(null);
+		this.skillsets = new ArrayList<Skillsets>();
 		
 		DatastoreWrapper datastore = new DatastoreWrapper(this.getOrganisation());
-
+		
 		// Query his skillsets
-		Filter filter = new FilterPredicate("employeeId",FilterOperator.EQUAL, this.getEmployeeId());
+		Filter filter = new FilterPredicate("employeeId",FilterOperator.EQUAL, entity.getProperty("employeeId"));
 		List<Entity> skillsetsEntities;
+		
 		try {
 			skillsetsEntities = datastore.getByFitler(filter,skillsetsKind);
-
-			ArrayList<Object> skillsetsList = new ArrayList<Object>();
 			if (!(skillsetsEntities.isEmpty())){
-				for(Entity ent: skillsetsEntities){
-					Map<String,Object> tempMap = new HashMap<String,Object>();
-					tempMap.put("name",ent.getProperty("skillset"));
-					tempMap.put("experience", ent.getProperty("experience"));
-					skillsetsList.add(tempMap);
+				for(Entity e: skillsetsEntities){
+					 Skillsets skillset = new Skillsets();
+					 skillset = skillset.fromEntity(e).toResponse();
+					 this.skillsets.add(skillset);
 				}
-				this.setSkillsets(skillsetsList);
+			}else{
+				this.setSkillsets(null);
 			}
 		} catch (Exception e1) {
+			System.out.println(e1);
 			e1.printStackTrace();
 		}
 		
 		
-		if(entity.hasProperty("Address")){
-			Entity addressEntity;
-			try{
-				addressEntity = datastore.get("Address",(String) entity.getProperty("address"));
-				this.setAddress((String) addressEntity.getProperty("address"));
-			}catch(Exception e){
-				
+		try{
+			try	{
+				Entity addressEntity = datastore.get(addressKind,((String) entity.getProperty("employeeId") + "_addr"));
+				Address address = new Address();
+				address = address.fromEntity(addressEntity);
+				this.setAddress(address);
+			}catch(EntityNotFoundException e){
+				logger.info("No Address Detail found for employee " + this.getEmployeeId());
 			}
+		}catch(Exception e){
+			e.printStackTrace();
 		}
 		return this;
 	}
@@ -177,7 +181,8 @@ public class Employee {
 	public List<Employee> fromEntities(List<Entity> entities) throws Exception{
 		List<Employee> listOfEmployees = new ArrayList<Employee>();
 		for (Entity e: entities){
-			listOfEmployees.add(this.fromEntity(e));
+			Employee employee = new Employee();
+			listOfEmployees.add(employee.fromEntity(e));
 		}
 		return listOfEmployees;
 	}

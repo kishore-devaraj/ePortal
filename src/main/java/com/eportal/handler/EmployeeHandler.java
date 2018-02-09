@@ -10,7 +10,6 @@ import javax.ws.rs.core.Context;
 
 import com.eportal.db.DatastoreWrapper;
 import com.eportal.models.Employee;
-import com.eportal.models.Skillsets;
 import com.eportal.utils.GenericResponse;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
@@ -22,15 +21,14 @@ public class EmployeeHandler {
 	private static DatastoreWrapper datastore;
 	private final static String addressKind = "Address";
 	private final static String employeeKind = "Employee";
-	private final static Logger logger = Logger.getLogger(EmployeeHandler.class.getName());
+	private final static String skillsetsKind = "Skillsets";
 	
-	@Context
-	ServletContext context;
+	private final static Logger logger = Logger.getLogger(EmployeeHandler.class.getName());
 	
 	public GenericResponse create(Employee employee, GenericResponse response){
 		datastore = new DatastoreWrapper(employee.getOrganisation());
 		try{
-			Entity entity = datastore.get(addressKind, employee.getEmployeeId());
+			Entity entity = datastore.get(employeeKind, employee.getEmployeeId());
 			response.setCode(400);
 			response.setData("error","This Employee Id already exists");
 		}catch(EntityNotFoundException e){
@@ -64,6 +62,31 @@ public class EmployeeHandler {
 		try{
 			Entity entity = datastore.get(employeeKind,id);
 			datastore.delete(employeeKind, id);
+			
+			// Deleting addressEntry
+			try{
+				Entity addressEntity = datastore.get(addressKind,id +"_addr");
+				datastore.delete(addressKind, id + "_addr");
+			}catch(Exception e){
+				logger.info("No address record for this entity");
+			}
+			
+			// Deleting Skillset
+			try{
+				Filter filter = new FilterPredicate("employeeId",FilterOperator.EQUAL,id);
+				List<Entity> entities = this.datastore.getByFitler(filter, skillsetsKind);
+				
+				if(!(entities.isEmpty())){
+					for(Entity e:entities){
+						String key = e.getProperty("employeeId") + "_" + e.getProperty("skillset");
+						System.out.println(key);
+						this.datastore.delete(skillsetsKind,key);
+					}
+				}
+			}catch(Exception e){
+				logger.warning("No skillsets record found for this entity");
+			}
+			
 			response.setCode(200);
 			response.setData("message","Employee successfully deleted");
 		}catch(EntityNotFoundException e){
@@ -146,7 +169,6 @@ public class EmployeeHandler {
 		Employee employee = new Employee();
 		
 		try{
-			System.out.println("Hey i caught you here");
 			Entity entity = datastore.get(employeeKind, id);
 			employee = employee.fromEntity(entity);
 			response.setCode(200);
@@ -190,37 +212,43 @@ public class EmployeeHandler {
 		return response;
 	}
 	
-	public GenericResponse getEmployeeBySkillsetsAndExperience(String organisation, String[] skillsets, int experience,GenericResponse response)
+	public GenericResponse getEmployeeBySkillsetsAndExperience(String organisation, String skillsets, int experience,GenericResponse response)
 	{
-		if(skillsets.length == 1){
-			String skillset = skillsets[0];
-		}else{
-			logger.warning("Multiple values given at skillsets");
-			response.setCode(400);
-			response.setData("error", "Mutliple value at skillset is not allowed");
-			return response;
-		}
+		datastore = new DatastoreWrapper(organisation);
 		
+		// Query the skillset record
+		Filter filter1 = new FilterPredicate("skillset", FilterOperator.EQUAL, skillsets);
+		Filter filter2 = new FilterPredicate("experience",FilterOperator.GREATER_THAN_OR_EQUAL, experience);
 		
-		return response;
-	}
-	
-	public GenericResponse updateSkillsetsAndExperience(Skillsets skillsets, GenericResponse response){
-		datastore = new DatastoreWrapper(skillsets.getOrganisation());
-		List<Entity> entities = skillsets.toEntity();
+		List<Entity> employeeEntities = new ArrayList<Entity>();
 		
-		for (Entity entity: entities){
-			try {
+		try {
+			List<Entity> queryEntities = datastore.getByComposite(filter1, filter2, skillsetsKind);
+			if(!(queryEntities.isEmpty())){
+				for(Entity ent: queryEntities){
+					Entity employeeEntity = datastore.get(employeeKind,(String) ent.getProperty("employeeId"));
+					employeeEntities.add(employeeEntity);
+				}
 				
-				datastore.put(skillsets.getEmployeeId(), entity);
+				Employee employee = new Employee();
+				List<Employee> listofEmployees = employee.fromEntities(employeeEntities);
+				
+				
 				response.setCode(200);
-				response.setData("message","Entities successfully updated");
-			} catch (Exception e) {
-				e.printStackTrace();
-				response.setCode(500);
-				response.setData("error","Exception occured. Please try again after sometime");
+				response.group("listOfEmployees", listofEmployees);
+			}else{
+				response.setCode(200);
+				response.setData("message","No Employees Record found");
 			}
+		} catch (Exception e) {
+			logger.warning("Exception occured while query skillsets");
+			logger.info("Exception name:" + e);
+			response.setCode(400);
+			response.setData("error","No employees found for this skillset");
 		}
+		
+		
+		
 		return response;
 	}
 }

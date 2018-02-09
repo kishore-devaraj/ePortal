@@ -1,68 +1,94 @@
 package com.eportal.models;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.eportal.models.request.SkillsetsRequest;
 import com.google.appengine.api.datastore.Entity;
 
 public class Skillsets {
-	private String EmployeeName;
 	
 	// Foreign Key
 	private String EmployeeId;
+	private String EmployeeName;
 	private String organisation;
-	private Map<String,Object> skillset = new HashMap <String,Object>();
-	private List<Object> skillsets = new ArrayList<Object>();
+	private String skillset;
+	private long experience;
 	
 	private final String skillsetsKind = "Skillsets";
-	
-	
-	public String getEmployeeName() {
-		return EmployeeName;
-	}
-	public void setEmployeeName(String employeeName) {
-		EmployeeName = employeeName;
-	}
+
 	public String getEmployeeId() {
 		return EmployeeId;
 	}
+
 	public void setEmployeeId(String employeeId) {
 		EmployeeId = employeeId;
 	}
+
+	public String getEmployeeName() {
+		return EmployeeName;
+	}
+
+	public void setEmployeeName(String employeeName) {
+		EmployeeName = employeeName;
+	}
+
 	public String getOrganisation() {
 		return organisation;
 	}
+
 	public void setOrganisation(String organisation) {
 		this.organisation = organisation;
 	}
-	public Map<String, Object> getSkillset() {
+
+	public String getSkillset() {
 		return skillset;
 	}
-	public void setSkillset(Map<String, Object> skillset) {
+
+	public void setSkillset(String skillset) {
 		this.skillset = skillset;
 	}
-	public List<Object> getSkillsets() {
-		return skillsets;
+
+	public long getExperience() {
+		return experience;
 	}
-	public void setSkillsets(List<Object> skillsets) {
-		this.skillsets = skillsets;
+
+	public void setExperience(long experience) {
+		this.experience = experience;
 	}
 	
-	public List<Entity> toEntity(){
-		List<Entity> entities = new ArrayList<Entity>();
-		
-		for(Object skillset: this.getSkillsets()){
-			this.setSkillset((Map<String,Object>) skillset);
-			Entity entity = new Entity(this.skillsetsKind, this.getEmployeeId() + "_" + this.getSkillset().get("name"));
-			entity.setIndexedProperty("employeeId",this.getEmployeeId());
-			entity.setIndexedProperty("skillset", this.getSkillset().get("name"));
-			entity.setIndexedProperty("experience",this.getSkillset().get("experience"));
-			entities.add(entity);
-		}
-		
-		return entities;
+	public Entity toEntity(){
+		Entity skillsetEntity = new Entity(this.skillsetsKind, this.getEmployeeId() + "_" + this.getSkillset());
+		skillsetEntity.setIndexedProperty("employeeId",this.getEmployeeId());
+		skillsetEntity.setIndexedProperty("skillset", this.getSkillset());
+		skillsetEntity.setIndexedProperty("experience",this.getExperience());	
+		return skillsetEntity;
 	}
+	
+	public Skillsets fromEntity(Entity entity){
+		this.setEmployeeId((String) entity.getProperty("employeeId"));
+		this.setEmployeeName((String) entity.getProperty("employeeName"));
+		this.setOrganisation((String) entity.getProperty("organisation"));
+		this.setExperience(Long.valueOf((long) entity.getProperty("experience")));
+		this.setSkillset((String) entity.getProperty("skillset"));
+		return this;
+	}
+	
+	public Skillsets mapEmployeetoSkillset(Employee employee,Skillsets skillset){
+		skillset.setEmployeeId(employee.getEmployeeId());
+		skillset.setEmployeeName(employee.getEmployeeName());
+		skillset.setOrganisation(employee.getOrganisation());
+		return skillset;
+	}
+	
+	public SkillsetsRequest toSkillsetsRequest(){
+		SkillsetsRequest skillsetRequest = new SkillsetsRequest();
+		skillsetRequest.setName(this.getSkillset());
+		skillsetRequest.setExperience(this.getExperience());
+		return skillsetRequest;
+	}
+	
+	public Skillsets toResponse(){
+		this.setEmployeeId(null);
+		return this;
+	}
+
 	
 }

@@ -14,6 +14,8 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PropertyProjection;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.CompositeFilter;
+import com.google.appengine.api.datastore.Query.CompositeFilterOperator;
 import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.memcache.MemcacheService;
@@ -34,7 +36,6 @@ public class DatastoreWrapper {
 		datastore = DatastoreServiceFactory.getDatastoreService();
 		cache = MemcacheServiceFactory.getMemcacheService();
 		NamespaceManager.set(namespace);
-		logger.info("Namespace is " + NamespaceManager.get());
 	}
 	
 	
@@ -76,6 +77,7 @@ public class DatastoreWrapper {
 	public Entity get(String kind,String id) throws EntityNotFoundException{
 			Entity entity = (Entity) cache.get(id);
 			if (entity != null){
+				logger.info("Returning from memcache");
 				return entity;
 			}
 			
@@ -102,7 +104,7 @@ public class DatastoreWrapper {
 			}
 			Key key = KeyFactory.createKey(kind, id);
 			this.datastore.delete(key);
-			trx.commit();
+			this.trx.commit();
 		}catch(Exception e){
 			logger.warning("Exception occurred while deleting");
 			logger.info("Exception name: " + e);
@@ -114,11 +116,19 @@ public class DatastoreWrapper {
 		}
 	}
 	
+	public void deleteEntityOnly(Entity entity) throws EntityNotFoundException{
+		this.datastore.get(entity.getKey());
+	}
+	
 	public List<Entity> getAll(String kind) throws Exception{
 		Query query = new Query(kind);
 		List<Entity> entities = this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
 		return entities;
 	}
+	
+	public List<Entity> executeQuery(Query query) throws Exception{
+		return this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+	}	
 	
 	public List<Entity> getByFitler(Filter filter,String kind) throws Exception {
 		Query query = new Query(kind).setFilter(filter);
@@ -126,12 +136,19 @@ public class DatastoreWrapper {
 		return entities;
 	}
 	
-	public List<Entity> getbyProjection(PropertyProjection projection, String Kind){
+	public List<Entity> getbyProjection(PropertyProjection projection, String Kind) throws Exception{
 		Query query = new Query(Kind).addProjection(projection);
 		List<Entity> entities = this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
 		return entities;
 	}
+
+	public List<Entity> getByComposite(Filter filter1, Filter filter2, String Kind) throws Exception {
+		CompositeFilter compositeFilter = CompositeFilterOperator.and(filter1,filter2);
+		Query query = new Query(Kind).setFilter(compositeFilter);
+		return this.datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+	}
 }	
+
 
 
 /*
