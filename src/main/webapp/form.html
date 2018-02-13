@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+<form method="POST" action="/v1/bucket" enctype="multipart/form-data">
+
+  <div>
+    <label for="title">Title</label>
+    <input type="text" name="title" id="title" size="40" value="" />
+  </div>
+
+  <div>
+    <label for="author">Author</label>
+    <input type="text" name="author" id="author" size="40" value="" />
+  </div>
+
+  <div class="form-group">
+    <label for="description">Post content</label>
+    <textarea name="description" id="description" rows="10" cols="50"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="filename">Upload image</label>
+    <!-- Allow only image file types to be selected -->
+    <input type="file" name="file" accept="image/*">
+  </div>
+
+  <button type="submit">Save</button>
+
+</form>
+</body>
+</html>

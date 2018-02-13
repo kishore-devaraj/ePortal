@@ -16,22 +16,11 @@
       <param-name>jersey.config.server.provider.packages</param-name>
       <param-value>com.eportal</param-value>
     </init-param>
-    <init-param>
-    	<param-name>companyName</param-name>
-    	<param-value>Test Organisation</param-value>
-    </init-param>
   </servlet>
   <servlet-mapping>
     <servlet-name>Employee Data Portal</servlet-name>
     <url-pattern>/v1/*</url-pattern>
   </servlet-mapping>
- 
-	<context-param>
-	    <description>Context Parameter Test</description>
-	    <param-name>companyName</param-name>
-	    <param-value>Test Organization, Incorporated</param-value>
-	</context-param>
-
   <!--  Declaring Filters --> 
  <!--
   <filter>
